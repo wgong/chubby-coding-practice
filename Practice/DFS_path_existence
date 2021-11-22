@@ -1,0 +1,58 @@
+Input:
+Graph: V=[a,c,e,x,y], E={(a->c), (a->e), (c->x), (c->y)}
+
+Def search_exist_path(start_name, end_name, graph):
+    """Return: boolean """
+
+N = len(graph.vertices)
+
+Hmap = {}
+For I=0,…,N-1:
+	hmap[graph.vertices[I]]=i
+
+bool[0…N-1][0…N-1] adjacency_matrix // initialize w false
+for edge in graph.edges:
+    adjacency_matrix[hmap[edge[0]]][hmap[edge[1]]]=true
+
+int start = hmap[start_name]
+int end = hmap[end_name]
+
+// Data structures
+bool[N] processed;
+Queue Q;
+
+// Initialize
+Q.push(start)
+For I=0,…,N-1:
+	processed[I]=false
+
+While Q is not empty:
+	node_index = Q.pop()
+	processed[node_index] = true
+	
+	for I=0,…,N-1:
+		if adjacency_matrix[node_index][I] == true and processed[I]== false:
+			if I == end:
+				return true
+			Q.push(i)
+Return false
+
+———————————————
+
+Init: Q=[1]
+0: node=1, processed[1]=true
+Q=[2]
+———————————————
+
+Init: Q=[3]
+0: node=3, processed[3]=true
+
+———————————————
+
+Init: Q=[1]
+0: node=1, processed[1]=true
+Q=[2]
+Q=[2,3]
+
+1: node=2, processed[2]=true
+Q=[3,4]

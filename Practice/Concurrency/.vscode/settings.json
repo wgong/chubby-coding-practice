@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "__mutex_base": "cpp",
+        "memory": "cpp",
+        "semaphore": "cpp",
+        "ostream": "cpp"
+    }
+}
