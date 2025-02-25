@@ -514,3 +514,138 @@ Great! Here are concise answers to questions #41-50:
 ---
 
 These answers focus on practical strategies and key concepts. Let me know if you need further clarification or additional details on any topic!
+
+
+Yes, **MySQL supports Common Table Expressions (CTEs)** starting from version **8.0**. CTEs allow you to create temporary result sets that can be referenced within a `SELECT`, `INSERT`, `UPDATE`, or `DELETE` statement. They improve query readability and simplify complex queries by breaking them into logical parts.
+
+### Syntax:
+```sql
+WITH cte_name (column_list) AS (
+    -- Define the CTE query
+    SELECT ...
+)
+-- Use the CTE in a main query
+SELECT * FROM cte_name;
+```
+
+### Example of a Simple CTE:
+```sql
+WITH employee_salaries AS (
+    SELECT id, name, salary
+    FROM employees
+    WHERE department = 'Engineering'
+)
+SELECT name, salary
+FROM employee_salaries
+WHERE salary > 70000;
+```
+
+### Recursive CTE:
+MySQL also supports **recursive CTEs**, which are useful for hierarchical or iterative data (e.g., organizational charts, tree structures).
+
+#### Example of a Recursive CTE:
+```sql
+WITH RECURSIVE number_series AS (
+    -- Anchor member: Start with 1
+    SELECT 1 AS n
+    UNION ALL
+    -- Recursive member: Increment by 1
+    SELECT n + 1 FROM number_series WHERE n < 10
+)
+SELECT * FROM number_series;
+```
+
+### Key Points:
+1. **Non-Recursive CTEs**: Simplify complex queries by breaking them into smaller, reusable parts.
+2. **Recursive CTEs**: Allow you to work with hierarchical or iterative data structures.
+3. **Temporary Scope**: The CTE exists only for the duration of the query in which it is defined.
+
+### Benefits of CTEs:
+- Improve query readability and maintainability.
+- Avoid repetitive subqueries.
+- Enable recursion for hierarchical data.
+
+If you're using MySQL 8.0 or later, you can take full advantage of CTEs! However, if you're on an older version (e.g., MySQL 5.x), CTEs are not supported, and you would need to use subqueries or temporary tables instead.
+
+
+
+Here are **5 favorite SQL-related questions** focused on using **Presto** to process big data. These questions are designed to test both theoretical understanding and practical application of Presto in a big data environment:
+
+---
+
+### **1. How does Presto differ from traditional relational databases when querying large datasets?**
+- **Key Concept**: Presto is a distributed SQL query engine designed for querying large-scale data stored in various formats (e.g., HDFS, S3, Kafka) without loading it into a single database.
+- **Answer**:
+  - Presto is not a database but a query engine that processes data in-place across distributed storage systems.
+  - It supports ANSI SQL and can query data from multiple sources (e.g., Hive, MySQL, Cassandra) in a single query.
+  - Unlike traditional databases, Presto doesn’t store data itself; it reads data directly from storage systems like HDFS or cloud storage.
+
+---
+
+### **2. How do you optimize a Presto query for better performance when processing large datasets?**
+- **Key Concept**: Presto performance depends on efficient resource utilization, partitioning, and minimizing data movement.
+- **Answer**:
+  - Use **partition pruning**: Query only relevant partitions by filtering on partition columns.
+  - Optimize file formats: Use columnar formats like **Parquet** or **ORC** for faster scans.
+  - Increase parallelism: Adjust `task.concurrency` and `node-scheduler.max-splits-per-node` settings.
+  - Avoid `SELECT *`: Fetch only required columns to reduce I/O overhead.
+  - Use bucketing for joins: Pre-bucketed data reduces shuffle overhead during join operations.
+
+---
+
+### **3. Write a Presto SQL query to calculate the total sales per region from a large dataset stored in Hive.**
+- **Key Concept**: Presto integrates seamlessly with Hive and can query Hive tables directly.
+- **Answer**:
+```sql
+SELECT 
+    region, 
+    SUM(sales_amount) AS total_sales
+FROM hive.default.sales_data
+GROUP BY region
+ORDER BY total_sales DESC;
+```
+- Explanation:
+  - The `hive.default.sales_data` table resides in Hive's metastore.
+  - Presto reads the data in parallel and aggregates it using `SUM` and `GROUP BY`.
+
+---
+
+### **4. How does Presto handle joins on large datasets, and what strategies can you use to optimize them?**
+- **Key Concept**: Presto uses distributed processing for joins, which can be resource-intensive for large datasets.
+- **Answer**:
+  - **Broadcast Join**: For small-to-medium-sized tables, Presto broadcasts one table to all nodes.
+  - **Partitioned Join**: For large tables, Presto partitions both datasets and performs the join locally on each worker node.
+  - Optimization Strategies:
+    - Use bucketing or pre-partitioning to reduce shuffle overhead.
+    - Ensure join keys are indexed or sorted.
+    - Filter data before joining to reduce the dataset size.
+
+---
+
+### **5. How would you use Presto to query semi-structured data (e.g., JSON) stored in Amazon S3?**
+- **Key Concept**: Presto supports querying semi-structured data formats like JSON using functions to extract nested fields.
+- **Answer**:
+```sql
+SELECT 
+    id, 
+    json_extract_scalar(metadata, '$.event_type') AS event_type,
+    CAST(json_extract_scalar(metadata, '$.timestamp') AS TIMESTAMP) AS event_time
+FROM s3.default.events_json
+WHERE json_extract_scalar(metadata, '$.event_type') = 'click';
+```
+- Explanation:
+  - The `s3.default.events_json` table points to JSON files in an S3 bucket.
+  - Presto uses `json_extract_scalar` to extract specific fields from JSON objects.
+  - The `CAST` function converts extracted values into appropriate data types.
+
+---
+
+### Why These Questions?
+These questions cover:
+1. **Fundamental differences** between Presto and traditional databases.
+2. **Performance optimization**, a critical aspect of working with big data.
+3. **Practical SQL examples** for common tasks like aggregation and semi-structured data processing.
+4. **Join strategies**, which are essential for handling large datasets efficiently.
+5. **Integration with external systems** like Hive and S3, showcasing Presto’s versatility.
+
+Let me know if you'd like further elaboration or additional questions! 😊
