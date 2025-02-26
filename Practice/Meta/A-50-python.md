@@ -467,43 +467,167 @@ async def main():
 
 ### 4. Using multiprocessing for true parallelism
 
+# Implementing a Producer-Consumer Pattern with Python Multiprocessing
+
+The producer-consumer pattern with multiprocessing in Python is ideal for CPU-bound tasks that need true parallelism (bypassing the GIL). Here's how to implement it:
+
 ```python
 import multiprocessing as mp
 import time
 import random
 
-def producer(queue, name):
-    for i in range(20):
-        # Simulate production time
-        time.sleep(random.random())
+def producer(queue, producer_id, num_items):
+    """Producer function that places items into a shared queue."""
+    for i in range(num_items):
+        # Create an item to produce
+        item = f"Producer {producer_id} - Item {i}"
         
-        # Produce item
-        item = f"{name}-{i}"
+        # Simulate variable production time
+        time.sleep(random.uniform(0.1, 0.5))
         
-        # Put in queue
+        # Place item in the queue
         queue.put(item)
-        print(f"{name} produced: {item}")
+        print(f"[Producer {producer_id}] Produced: {item}")
     
-    # Signal completion
-    queue.put(None)
+    # Indicate this producer is done
+    queue.put(None)  # Sentinel value
+    print(f"[Producer {producer_id}] Done producing.")
 
-def consumer(queue, name):
+def consumer(queue, consumer_id):
+    """Consumer function that processes items from a shared queue."""
     while True:
-        # Get item from queue
+        # Get an item from the queue, waiting if necessary
         item = queue.get()
         
-        # Check for termination signal
+        # Check for sentinel value (end of production)
         if item is None:
-            print(f"{name} received termination signal")
-            queue.put(None)  # Put back for other consumers
+            # Put the sentinel back for other consumers and exit
+            queue.put(None)
             break
+            
+        # Process the item (simulate work)
+        print(f"[**Consumer** {consumer_id}] Processing: {item}")
+        time.sleep(random.uniform(0.2, 0.8))  # Simulate processing time
         
-        # Simulate consumption time
-        time.sleep(random.random() * 2)
-        
-        # Process item
-        print(f"{name} consumed: {item}")
+        # print(f"[Consumer {consumer_id}] Finished: {item}")
+
+def main():
+    # Create a multiprocessing queue for thread-safe communication
+    queue = mp.Queue(maxsize=10)  # Limit queue size to prevent memory issues
+    
+    # Number of producers and consumers
+    num_producers = 3
+    num_consumers = 2
+    items_per_producer = 5
+    
+    # Create and start producer processes
+    producers = []
+    for i in range(num_producers):
+        p = mp.Process(target=producer, args=(queue, i, items_per_producer))
+        producers.append(p)
+        p.start()
+    
+    # Create and start consumer processes
+    consumers = []
+    for i in range(num_consumers):
+        c = mp.Process(target=consumer, args=(queue, i))
+        consumers.append(c)
+        c.start()
+    
+    # Wait for all producers to finish
+    for p in producers:
+        p.join()
+    
+    # Wait for all consumers to finish
+    for c in consumers:
+        c.join()
+    
+    print("All processes completed.")
+
+if __name__ == "__main__":
+    # This guard is essential for multiprocessing
+    main()
 ```
+
+## Key Features of This Implementation
+
+1. **True Parallelism**: Uses `multiprocessing` instead of `threading` to bypass Python's GIL, allowing parallel execution on multiple CPU cores.
+
+2. **Process-Safe Queue**: `multiprocessing.Queue` provides process-safe communication between producers and consumers.
+
+3. **Bounded Queue Size**: The queue's `maxsize` parameter limits memory usage and creates back-pressure if producers outpace consumers.
+
+4. **Graceful Termination**: Uses `None` as a sentinel value to signal when production is complete.
+
+5. **Multiple Producers and Consumers**: Supports any number of producers and consumers working in parallel.
+
+## Use Cases in Data Engineering
+
+This pattern is particularly useful for:
+
+- Processing large files in parallel chunks
+- ETL workloads with CPU-intensive transformations
+- Distributed data processing pipelines
+- Image or video processing
+- Parallel API data ingestion
+
+Would you like me to expand on any part of this implementation or discuss variations for specific data processing scenarios?
+
+Let me create a Mermaid diagram to visualize the producer-consumer pattern implementation with multiprocessing.
+
+Here's a visualization of the producer-consumer pattern using multiprocessing:
+
+```mermaid
+
+flowchart LR
+    subgraph main["Main Process"]
+        A[Start Main] --> B[Create MP Queue]
+        B --> C[Create Producer Processes]
+        C --> D[Create Consumer Processes]
+        D --> E[Wait for processes to complete]
+        E --> F[End Main]
+    end
+
+    subgraph producers["Producer Processes"]
+        P1[Producer 1] --> |"put(item1)"| Q[(MP Queue)]
+        P2[Producer 2] --> |"put(item2)"| Q
+        P3[Producer 3] --> |"put(item3)"| Q
+        
+        P1 --> |"put(None)"| Q
+        P2 --> |"put(None)"| Q
+        P3 --> |"put(None)"| Q
+    end
+
+    subgraph consumers["Consumer Processes"]
+        Q --> |"get()"| C1[Consumer 1]
+        Q --> |"get()"| C2[Consumer 2]
+        
+        C1 --> |"Process item"| C1_done[Done]
+        C2 --> |"Process item"| C2_done[Done]
+        
+        C1 --> |"If None, put(None) back"| Q
+        C2 --> |"If None, put(None) back"| Q
+    end
+    
+    C --> producers
+    D --> consumers
+```
+
+The diagram illustrates how:
+
+1. The main process creates a multiprocessing Queue that serves as the communication channel
+2. Multiple producer processes independently generate items and put them into the shared queue
+3. Consumer processes take items from the queue and process them concurrently
+4. Producers add sentinel values (None) when they finish to signal completion
+5. When consumers encounter a sentinel value, they put it back in the queue for other consumers and terminate
+
+This architecture achieves true parallelism because each producer and consumer runs in a separate Python process with its own memory space and interpreter, completely bypassing the GIL (Global Interpreter Lock).
+
+The bounded queue creates natural back-pressure in the system - if producers generate data faster than consumers can process it, the queue will eventually fill up, causing producers to block until space becomes available. This helps prevent memory issues when processing large datasets.
+
+Would you like me to explain any specific aspect of the diagram or the underlying implementation in more detail?
+
+
 
 **Pros and Cons of Each Approach:**
 
